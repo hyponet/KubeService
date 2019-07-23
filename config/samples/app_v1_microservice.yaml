@@ -1,0 +1,9 @@
+apiVersion: app.o0w0o.cn/v1
+kind: MicroService
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: microservice-sample
+spec:
+  # Add fields here
+  foo: bar
