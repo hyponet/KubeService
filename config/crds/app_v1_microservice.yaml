@@ -40,6 +40,7 @@ spec:
                       type: object
                   required:
                   - name
+                  - spec
                   type: object
                 service:
                   properties:
@@ -51,9 +52,6 @@ spec:
                   - name
                   - spec
                   type: object
-              required:
-              - service
-              - ingress
               type: object
             versions:
               items:
@@ -70,6 +68,8 @@ spec:
                         type: string
                       weight:
                         format: int64
+                        maximum: 100
+                        minimum: 1
                         type: integer
                     required:
                     - weight
@@ -86,12 +86,11 @@ spec:
                     type: object
                 required:
                 - name
+                - template
                 - serviceName
-                - canary
                 type: object
               type: array
           required:
-          - loadBalance
           - versions
           - currentVersionName
           type: object

@@ -26,7 +26,10 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 type Canary struct {
-	Weight            int    `json:"weight"`
+	// +kubebuilder:validation:Maximum=100
+	// +kubebuilder:validation:Minimum=1
+	Weight int `json:"weight"`
+
 	CanaryIngressName string `json:"canaryIngressName"`
 	Header            string `json:"header"`
 	HeaderValue       string `json:"headerValue"`
@@ -35,9 +38,10 @@ type Canary struct {
 
 type DeployVersion struct {
 	Name        string                `json:"name"`
-	Template    appsv1.DeploymentSpec `json:"template,omitempty"`
+	Template    appsv1.DeploymentSpec `json:"template"`
 	ServiceName string                `json:"serviceName"`
-	Canary      Canary                `json:"canary"`
+	// +optional
+	Canary Canary `json:"canary,omitempty"`
 }
 
 type ServiceLoadBalance struct {
@@ -47,17 +51,20 @@ type ServiceLoadBalance struct {
 
 type IngressLoadBalance struct {
 	Name string                        `json:"name"`
-	Spec extensionsv1beta1.IngressSpec `json:"spec,omitempty"`
+	Spec extensionsv1beta1.IngressSpec `json:"spec"`
 }
 
 type LoadBalance struct {
-	Service ServiceLoadBalance `json:"service"`
-	Ingress IngressLoadBalance `json:"ingress"`
+	// +optional
+	Service ServiceLoadBalance `json:"service,omitempty"`
+	// +optional
+	Ingress IngressLoadBalance `json:"ingress,omitempty"`
 }
 
 // MicroServiceSpec defines the desired state of MicroService
 type MicroServiceSpec struct {
-	LoadBalance        LoadBalance     `json:"loadBalance"`
+	// +optional
+	LoadBalance        LoadBalance     `json:"loadBalance,omitempty"`
 	Versions           []DeployVersion `json:"versions"`
 	CurrentVersionName string          `json:"currentVersionName"`
 }
