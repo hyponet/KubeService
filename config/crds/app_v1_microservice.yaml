@@ -27,6 +27,73 @@ spec:
         metadata:
           type: object
         spec:
+          properties:
+            currentVersionName:
+              type: string
+            loadBalance:
+              properties:
+                ingress:
+                  properties:
+                    name:
+                      type: string
+                    spec:
+                      type: object
+                  required:
+                  - name
+                  type: object
+                service:
+                  properties:
+                    name:
+                      type: string
+                    spec:
+                      type: object
+                  required:
+                  - name
+                  - spec
+                  type: object
+              required:
+              - service
+              - ingress
+              type: object
+            versions:
+              items:
+                properties:
+                  canary:
+                    properties:
+                      canaryIngressName:
+                        type: string
+                      cookie:
+                        type: string
+                      header:
+                        type: string
+                      headerValue:
+                        type: string
+                      weight:
+                        format: int64
+                        type: integer
+                    required:
+                    - weight
+                    - canaryIngressName
+                    - header
+                    - headerValue
+                    - cookie
+                    type: object
+                  name:
+                    type: string
+                  serviceName:
+                    type: string
+                  template:
+                    type: object
+                required:
+                - name
+                - serviceName
+                - canary
+                type: object
+              type: array
+          required:
+          - loadBalance
+          - versions
+          - currentVersionName
           type: object
         status:
           type: object

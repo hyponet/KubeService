@@ -22,11 +22,14 @@ import (
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+type MicroServiceTemplate struct {
+	Name string           `json:"name"`
+	Spec MicroServiceSpec `json:"spec,omitempty"`
+}
 
 // AppSpec defines the desired state of App
 type AppSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	MicroServices []MicroServiceTemplate `json:"microServices,omitempty"`
 }
 
 // AppStatus defines the observed state of App

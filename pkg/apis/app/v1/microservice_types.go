@@ -17,16 +17,49 @@ limitations under the License.
 package v1
 
 import (
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+type Canary struct {
+	Weight            int    `json:"weight"`
+	CanaryIngressName string `json:"canaryIngressName"`
+	Header            string `json:"header"`
+	HeaderValue       string `json:"headerValue"`
+	Cookie            string `json:"cookie"`
+}
+
+type DeployVersion struct {
+	Name        string                `json:"name"`
+	Template    appsv1.DeploymentSpec `json:"template,omitempty"`
+	ServiceName string                `json:"serviceName"`
+	Canary      Canary                `json:"canary"`
+}
+
+type ServiceLoadBalance struct {
+	Name string             `json:"name"`
+	Spec corev1.ServiceSpec `json:"spec"`
+}
+
+type IngressLoadBalance struct {
+	Name string                        `json:"name"`
+	Spec extensionsv1beta1.IngressSpec `json:"spec,omitempty"`
+}
+
+type LoadBalance struct {
+	Service ServiceLoadBalance `json:"service"`
+	Ingress IngressLoadBalance `json:"ingress"`
+}
 
 // MicroServiceSpec defines the desired state of MicroService
 type MicroServiceSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	LoadBalance        LoadBalance     `json:"loadBalance"`
+	Versions           []DeployVersion `json:"versions"`
+	CurrentVersionName string          `json:"currentVersionName"`
 }
 
 // MicroServiceStatus defines the observed state of MicroService
