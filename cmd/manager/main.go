@@ -18,18 +18,35 @@ package main
 
 import (
 	"flag"
+	"k8s.io/apimachinery/pkg/runtime"
 	"os"
 
 	"KubeService/pkg/apis"
 	"KubeService/pkg/controller"
 	"KubeService/pkg/webhook"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
+	// +kubebuilder:scaffold:imports
 )
+
+var (
+	scheme = runtime.NewScheme()
+)
+
+func init() {
+	_ = corev1.AddToScheme(scheme)
+	_ = appsv1.AddToScheme(scheme)
+	_ = extensionsv1beta1.AddToScheme(scheme)
+	_ = apis.AddToScheme(scheme)
+	// +kubebuilder:scaffold:scheme
+}
 
 func main() {
 	var metricsAddr string
