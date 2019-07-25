@@ -40,7 +40,7 @@ type DeployVersion struct {
 	// +optional
 	ServiceName string `json:"serviceName"`
 	// +optional
-	Canary Canary `json:"canary,omitempty"`
+	Canary *Canary `json:"canary,omitempty"`
 }
 
 type ServiceLoadBalance struct {

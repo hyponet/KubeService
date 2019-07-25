@@ -143,7 +143,11 @@ func (in *Canary) DeepCopy() *Canary {
 func (in *DeployVersion) DeepCopyInto(out *DeployVersion) {
 	*out = *in
 	in.Template.DeepCopyInto(&out.Template)
-	out.Canary = in.Canary
+	if in.Canary != nil {
+		in, out := &in.Canary, &out.Canary
+		*out = new(Canary)
+		**out = **in
+	}
 	return
 }
 

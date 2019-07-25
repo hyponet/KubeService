@@ -48,10 +48,13 @@ func (r *ReconcileMicroService) reconcileInstance(microService *appv1.MicroServi
 func makeVersionDeployment(version *appv1.DeployVersion, microService *appv1.MicroService) (*appsv1.Deployment, error) {
 
 	labels := microService.Labels
+	if labels==nil{
+		labels = make(map[string]string)
+	}
 	labels["app.o0w0o.cn/service"] = microService.Name
 	labels["app.o0w0o.cn/version"] = version.Name
 
-	deploySepc := version.Template
+	deploySpec := version.Template
 
 	deploy := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -59,7 +62,7 @@ func makeVersionDeployment(version *appv1.DeployVersion, microService *appv1.Mic
 			Namespace: microService.Namespace,
 			Labels:    labels,
 		},
-		Spec: deploySepc,
+		Spec: deploySpec,
 	}
 
 	return deploy, nil
