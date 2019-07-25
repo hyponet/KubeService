@@ -3,7 +3,41 @@ kind: MicroService
 metadata:
   labels:
     controller-tools.k8s.io: "1.0"
-  name: microservice-sample
+  name: gateway-sample
 spec:
-  # Add fields here
-  foo: bar
+  loadBalance:
+    service:
+      name: gateway-sample
+      spec:
+        ports:
+        - protocol: TCP
+          port: 80
+          targetPort: 80
+    ingress:
+      name: gateway-sample
+      spec:
+        rules:
+        - host: foo.o0w0o.cn
+          http:
+            paths:
+              - path: /bar
+                backend:
+                  serviceName: gateway-sample
+                  servicePort: 80
+  versions:
+    - name: v1
+      template:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: nginx
+        template:
+          metadata:
+            labels:
+              app: nginx
+          spec:
+            containers:
+            - image: nginx
+              name: nginx
+      serviceName: gateway-sample-v1
+  currentVersionName: v1

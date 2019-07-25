@@ -14,6 +14,9 @@ import (
 
 func (r *ReconcileMicroService) reconcileLoadBalance(microService *appv1.MicroService) error {
 	lb := microService.Spec.LoadBalance
+	if lb == nil {
+		return nil
+	}
 
 	if len(microService.Spec.Versions) == 0 {
 		return nil
@@ -27,14 +30,9 @@ func (r *ReconcileMicroService) reconcileLoadBalance(microService *appv1.MicroSe
 		}
 	}
 
-	if reflect.ValueOf(lb).IsNil() {
-		// init default LB
-		lb = appv1.LoadBalance{}
-	}
-
-	svcLB := lb.Service
 	enableSVC := false
-	if !reflect.ValueOf(svcLB).IsNil() {
+	if lb.Service != nil {
+		svcLB := lb.Service
 		// If use define custom Service
 		enableSVC = true
 		if svcLB.Spec.Selector == nil {
@@ -54,8 +52,8 @@ func (r *ReconcileMicroService) reconcileLoadBalance(microService *appv1.MicroSe
 		}
 	}
 
-	ingressLB := lb.Ingress
-	if !reflect.ValueOf(ingressLB).IsNil() {
+	if lb.Ingress != nil {
+		ingressLB := lb.Ingress
 		ingress := &extensionsv1beta1.Ingress{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      ingressLB.Name,
@@ -68,14 +66,13 @@ func (r *ReconcileMicroService) reconcileLoadBalance(microService *appv1.MicroSe
 		err := r.Get(context.TODO(), types.NamespacedName{Name: ingress.Name, Namespace: ingress.Namespace}, found)
 		if err != nil && errors.IsNotFound(err) {
 			log.Info("Creating Ingress", "namespace", ingress.Namespace, "name", ingress.Name)
-			err = r.Create(context.TODO(), ingress)
-			return err
+			if err = r.Create(context.TODO(), ingress); err != nil {
+				return err
+			}
 		} else if err != nil {
 			return err
-		}
-
-		// Update the found object and write the result back if there are any changes
-		if !reflect.DeepEqual(ingress.Spec, found.Spec) {
+		}else if !reflect.DeepEqual(ingress.Spec, found.Spec) {
+			// Update the found object and write the result back if there are any changes
 			found.Spec = ingress.Spec
 			log.Info("Updating Ingress", "namespace", ingress.Namespace, "name", ingress.Name)
 			err = r.Update(context.TODO(), found)
@@ -90,7 +87,7 @@ func (r *ReconcileMicroService) reconcileLoadBalance(microService *appv1.MicroSe
 	}
 
 	for _, version := range microService.Spec.Versions {
-		spec := svcLB.Spec.DeepCopy()
+		spec := lb.Service.Spec.DeepCopy()
 		spec.Selector = version.Template.Selector.MatchLabels
 		svc, err := makeService(microService.Name+"-"+version.Name, microService.Namespace, microService.Labels, spec)
 		if err != nil {

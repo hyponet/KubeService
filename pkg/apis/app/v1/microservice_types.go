@@ -23,8 +23,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 type Canary struct {
 	// +kubebuilder:validation:Maximum=100
 	// +kubebuilder:validation:Minimum=1
@@ -37,9 +35,10 @@ type Canary struct {
 }
 
 type DeployVersion struct {
-	Name        string                `json:"name"`
-	Template    appsv1.DeploymentSpec `json:"template"`
-	ServiceName string                `json:"serviceName"`
+	Name     string                `json:"name"`
+	Template appsv1.DeploymentSpec `json:"template"`
+	// +optional
+	ServiceName string `json:"serviceName"`
 	// +optional
 	Canary Canary `json:"canary,omitempty"`
 }
@@ -56,15 +55,15 @@ type IngressLoadBalance struct {
 
 type LoadBalance struct {
 	// +optional
-	Service ServiceLoadBalance `json:"service,omitempty"`
+	Service *ServiceLoadBalance `json:"service,omitempty"`
 	// +optional
-	Ingress IngressLoadBalance `json:"ingress,omitempty"`
+	Ingress *IngressLoadBalance `json:"ingress,omitempty"`
 }
 
 // MicroServiceSpec defines the desired state of MicroService
 type MicroServiceSpec struct {
 	// +optional
-	LoadBalance        LoadBalance     `json:"loadBalance,omitempty"`
+	LoadBalance        *LoadBalance    `json:"loadBalance,omitempty"`
 	Versions           []DeployVersion `json:"versions"`
 	CurrentVersionName string          `json:"currentVersionName"`
 }

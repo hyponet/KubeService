@@ -130,7 +130,12 @@ func (r *ReconcileMicroService) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	if err := r.reconcileInstance(instance); err != nil {
-		log.Info("Creating Deployment error", err)
+		log.Info("Reconcile Deployment error", err)
+		return reconcile.Result{}, err
+	}
+
+	if err := r.reconcileLoadBalance(instance); err != nil {
+		log.Info("Reconcile LoadBalance error", err)
 		return reconcile.Result{}, err
 	}
 
