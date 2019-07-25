@@ -62,6 +62,9 @@ func (r *ReconcileMicroService) reconcileLoadBalance(microService *appv1.MicroSe
 			},
 			Spec: ingressLB.Spec,
 		}
+		if err := controllerutil.SetControllerReference(microService, ingress, r.scheme); err != nil {
+			return err
+		}
 		found := &extensionsv1beta1.Ingress{}
 		err := r.Get(context.TODO(), types.NamespacedName{Name: ingress.Name, Namespace: ingress.Namespace}, found)
 		if err != nil && errors.IsNotFound(err) {
@@ -71,21 +74,14 @@ func (r *ReconcileMicroService) reconcileLoadBalance(microService *appv1.MicroSe
 			}
 		} else if err != nil {
 			return err
-		}else if !reflect.DeepEqual(ingress.Spec, found.Spec) {
-			// Update the found object and write the result back if there are any changes
-			found.Spec = ingress.Spec
-			log.Info("Updating Ingress", "namespace", ingress.Namespace, "name", ingress.Name)
-			err = r.Update(context.TODO(), found)
-			if err != nil {
-				return err
-			}
+		} else if !reflect.DeepEqual(ingress.Spec, found.Spec) {
+			log.Info("Find Ingress as been modified, but not reconciled", "namespace", ingress.Namespace, "name", ingress.Name)
 		}
 	}
 
 	if !enableSVC {
 		return nil
 	}
-
 	for _, version := range microService.Spec.Versions {
 		spec := lb.Service.Spec.DeepCopy()
 		spec.Selector = version.Template.Selector.MatchLabels
@@ -115,16 +111,8 @@ func (r *ReconcileMicroService) updateOrCreateSvc(svc *v1.Service) error {
 		return err
 	} else if err != nil {
 		return err
-	}
-
-	// Update the found object and write the result back if there are any changes
-	if !reflect.DeepEqual(svc.Spec, found.Spec) {
-		found.Spec = svc.Spec
-		log.Info("Updating Service", "namespace", svc.Namespace, "name", svc.Name)
-		err = r.Update(context.TODO(), found)
-		if err != nil {
-			return err
-		}
+	} else if !reflect.DeepEqual(svc.Spec, found.Spec) {
+		log.Info("Find SVC as been modified, but not reconciled", "namespace", svc.Namespace, "name", svc.Name)
 	}
 	return nil
 }
