@@ -71,17 +71,17 @@ spec:
             name: voting-result
             spec:
               rules:
-                - host: voting.o0w0o.cn
+                - host: result.voting.o0w0o.cn
                   http:
                     paths:
-                      - path: /result
+                      - path: /
                         backend:
                           serviceName: voting-result
                           servicePort: 80
         versions:
           - name: v1
             template:
-              replicas: 2
+              replicas: 1
               selector:
                 matchLabels:
                   app: voting-result

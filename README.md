@@ -2,6 +2,8 @@
 
 A simple CRD controller for micro-service management.
 
+![](https://github.com/Coderhypo/KubeService/blob/master/docs/img/KubeService.gif?raw=true)
+
 ## What's KubeService
 
 KubeService is a CRD controller build on KubeBuilder, 
@@ -117,17 +119,17 @@ spec:
             name: voting-result
             spec:
               rules:
-                - host: voting.o0w0o.cn
+                - host: result.voting.o0w0o.cn
                   http:
                     paths:
-                      - path: /result
+                      - path: /
                         backend:
                           serviceName: voting-result
                           servicePort: 80
         versions:
           - name: v1
             template:
-              replicas: 2
+              replicas: 1
               selector:
                 matchLabels:
                   app: voting-result
@@ -178,5 +180,4 @@ spec:
       targetPort: 6379
   selector:
     app: redis
-
 ```

@@ -35,10 +35,7 @@ func (r *ReconcileApp) reconcileMicroService(app *appv1.App) error {
 			return err
 		} else if err != nil {
 			return err
-		}
-
-		// Update the found object and write the result back if there are any changes
-		if !reflect.DeepEqual(ms.Spec, found.Spec) {
+		} else if !reflect.DeepEqual(ms.Spec, found.Spec) {
 			found.Spec = ms.Spec
 			log.Info("Updating MicroService", "namespace", ms.Namespace, "name", ms.Name)
 			err = r.Update(context.TODO(), found)
