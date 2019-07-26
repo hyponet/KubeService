@@ -2,7 +2,7 @@
 
 A simple CRD controller for micro-service management.
 
-![](https://github.com/Coderhypo/KubeService/blob/master/docs/img/KubeService.gif?raw=true)
+<div align=center><img src="https://github.com/Coderhypo/KubeService/blob/master/docs/img/KubeService.gif?raw=true"/></div>
 
 ## What's KubeService
 
