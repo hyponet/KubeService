@@ -1,100 +1,134 @@
 apiVersion: app.o0w0o.cn/v1
 kind: App
 metadata:
-  labels:
-    controller-tools.k8s.io: "1.0"
-  name: app-sample
+  name: voting-sample
 spec:
   microServices:
-    - name: gateway-sample
+    - name: voting-web
       spec:
         loadBalance:
           service:
-            name: gateway-sample
+            name: voting-web
             spec:
               ports:
                 - protocol: TCP
                   port: 80
                   targetPort: 80
           ingress:
-            name: gateway-sample
+            name: voting-web
             spec:
               rules:
-                - host: foo.o0w0o.cn
+                - host: voting.o0w0o.cn
                   http:
                     paths:
-                      - path: /bar
+                      - path: /
                         backend:
-                          serviceName: gateway-sample
+                          serviceName: voting-web
                           servicePort: 80
         versions:
           - name: v1
             template:
-              replicas: 1
+              replicas: 2
               selector:
                 matchLabels:
-                  app: nginx
+                  app: voting-web
               template:
                 metadata:
                   labels:
-                    app: nginx
+                    app: voting-web
                 spec:
                   containers:
-                    - image: nginx
-                      name: nginx
-            serviceName: gateway-sample
+                    - image: daocloud.io/w0v0w/voting-demo-voting:v1
+                      name: voting-web
           - name: v2
+            canary:
+              weight: 30
             template:
               replicas: 1
               selector:
                 matchLabels:
-                  app: nginx
+                  app: voting-web-for-kid
               template:
                 metadata:
                   labels:
-                    app: nginx
+                    app: voting-web-for-kid
                 spec:
                   containers:
-                    - image: nginx
-                      name: nginx
-            serviceName: gateway-sample-v2
+                    - image: daocloud.io/w0v0w/voting-demo-voting:v2
+                      name: voting-web-for-kid
         currentVersionName: v1
-    - name: gateway-sample2
+    - name: voting-result
       spec:
         loadBalance:
           service:
-            name: gateway-sample2
+            name: voting-result
             spec:
               ports:
                 - protocol: TCP
                   port: 80
                   targetPort: 80
           ingress:
-            name: gateway-sample2
+            name: voting-result
             spec:
               rules:
-                - host: foo.o0w0o.cn
+                - host: voting.o0w0o.cn
                   http:
                     paths:
-                      - path: /bar
+                      - path: /result
                         backend:
-                          serviceName: gateway-sample2
+                          serviceName: voting-result
                           servicePort: 80
         versions:
-          - name: v2
+          - name: v1
             template:
-              replicas: 1
+              replicas: 2
               selector:
                 matchLabels:
-                  app: nginx
+                  app: voting-result
               template:
                 metadata:
                   labels:
-                    app: nginx
+                    app: voting-result
                 spec:
                   containers:
-                    - image: nginx
-                      name: nginx
-            serviceName: gateway-sample2
-        currentVersionName: v2
+                    - image: daocloud.io/w0v0w/voting-demo-result:v1
+                      name: voting-result
+        currentVersionName: v1
 
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: redis
+  name: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - image: redis
+          name: redis
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: redis
+  name: redis
+spec:
+  ports:
+    - port: 6379
+      protocol: TCP
+      targetPort: 6379
+  selector:
+    app: redis
