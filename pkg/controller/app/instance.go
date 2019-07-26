@@ -16,7 +16,7 @@ func (r *ReconcileApp) reconcileMicroService(app *appv1.App) error {
 
 		ms := &appv1.MicroService{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      app.Name + microService.Name,
+				Name:      app.Name + "-" + microService.Name,
 				Namespace: app.Namespace,
 			},
 			Spec: microService.Spec,

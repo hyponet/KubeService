@@ -41,7 +41,7 @@ func (r *ReconcileMicroService) reconcileLoadBalance(microService *appv1.MicroSe
 		// If use define custom Service
 		enableSVC = true
 		svcLB.Spec.Selector = currentVersion.Template.Selector.MatchLabels
-		svc, err := makeService(microService.Name, microService.Namespace, microService.Labels, &svcLB.Spec)
+		svc, err := makeService(svcLB.Name, microService.Namespace, microService.Labels, &svcLB.Spec)
 		if err != nil {
 			return err
 		}
@@ -78,7 +78,7 @@ func (r *ReconcileMicroService) reconcileLoadBalance(microService *appv1.MicroSe
 	}
 
 	if enableSVC {
-		for _, version := range microService.Spec.Versions {
+		for i, version := range microService.Spec.Versions {
 			spec := lb.Service.Spec.DeepCopy()
 			spec.Selector = version.Template.Selector.MatchLabels
 			serviceName := version.ServiceName
@@ -96,7 +96,7 @@ func (r *ReconcileMicroService) reconcileLoadBalance(microService *appv1.MicroSe
 			if err := r.updateOrCreateSVC(svc); err != nil {
 				return err
 			}
-			version.ServiceName = serviceName
+			microService.Spec.Versions[i].ServiceName = serviceName
 			staySVCName = append(staySVCName, serviceName)
 		}
 	}

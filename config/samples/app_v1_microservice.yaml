@@ -1,45 +1,42 @@
 apiVersion: app.o0w0o.cn/v1
 kind: MicroService
 metadata:
-  labels:
-    controller-tools.k8s.io: "1.0"
-  name: gateway-sample
+  name: voting-web
 spec:
   loadBalance:
     service:
-      name: gateway-sample
+      name: voting-web
       spec:
         ports:
-        - protocol: TCP
-          port: 80
-          targetPort: 80
+          - protocol: TCP
+            port: 80
+            targetPort: 80
     ingress:
-      name: gateway-sample
+      name: voting-web
       spec:
         rules:
-        - host: foo.o0w0o.cn
-          http:
-            paths:
-              - path: /bar
-                backend:
-                  serviceName: gateway-sample
-                  servicePort: 80
+          - host: voting.o0w0o.cn
+            http:
+              paths:
+                - path: /bar
+                  backend:
+                    serviceName: voting-web
+                    servicePort: 80
   versions:
     - name: v1
       template:
-        replicas: 1
+        replicas: 2
         selector:
           matchLabels:
-            app: nginx-v1
+            app: voting-web
         template:
           metadata:
             labels:
-              app: nginx-v1
+              app: voting-web
           spec:
             containers:
-            - image: nginx
-              name: nginx
-      serviceName: gateway-sample-v1
+              - image: daocloud.io/w0v0w/voting-demo-voting:v1
+                name: voting-web
     - name: v2
       canary:
         weight: 10
@@ -47,14 +44,13 @@ spec:
         replicas: 1
         selector:
           matchLabels:
-            app: nginx-v2
+            app: voting-web-for-kid
         template:
           metadata:
             labels:
-              app: nginx-v2
+              app: voting-web-for-kid
           spec:
             containers:
-            - image: nginx
-              name: nginx
-      serviceName: gateway-sample-v2
+              - image: daocloud.io/w0v0w/voting-demo-voting:v2
+                name: voting-web-for-kid
   currentVersionName: v1
