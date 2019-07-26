@@ -8,11 +8,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"reflect"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-func (r *ReconcileMicroService) reconcileInstance(microService *appv1.MicroService) error {
+func (r *ReconcileMicroService) reconcileInstance(req reconcile.Request, microService *appv1.MicroService) error {
 
+	newDeploys := make(map[string]*appsv1.Deployment)
 	for _, version := range microService.Spec.Versions {
 
 		deploy, err := makeVersionDeployment(&version, microService)
@@ -23,6 +26,7 @@ func (r *ReconcileMicroService) reconcileInstance(microService *appv1.MicroServi
 			return err
 		}
 
+		newDeploys[deploy.Name] = deploy
 		// Check if the Deployment already exists
 		found := &appsv1.Deployment{}
 		err = r.Get(context.TODO(), types.NamespacedName{Name: deploy.Name, Namespace: deploy.Namespace}, found)
@@ -42,7 +46,7 @@ func (r *ReconcileMicroService) reconcileInstance(microService *appv1.MicroServi
 			}
 		}
 	}
-	return nil
+	return r.cleanUpDeploy(req, microService, newDeploys)
 }
 
 func makeVersionDeployment(version *appv1.DeployVersion, microService *appv1.MicroService) (*appsv1.Deployment, error) {
@@ -66,4 +70,29 @@ func makeVersionDeployment(version *appv1.DeployVersion, microService *appv1.Mic
 	}
 
 	return deploy, nil
+}
+
+func (r *ReconcileMicroService) cleanUpDeploy(req reconcile.Request, microService *appv1.MicroService, newDeployList map[string]*appsv1.Deployment) error {
+	// Check if the MicroService not exists
+	ctx := context.Background()
+
+	deployList := appsv1.DeploymentList{}
+	labels := make(map[string]string)
+	labels["app.o0w0o.cn/service"] = microService.Name
+
+	if err := r.List(ctx, client.InNamespace(req.Namespace).
+		MatchingLabels(labels), &deployList); err != nil {
+		log.Error(err, "unable to list old MicroServices")
+		return err
+	}
+
+	for _, oldDeploy := range deployList.Items {
+		if _, exist := newDeployList[oldDeploy.Name]; exist == false {
+			err := r.Delete(context.TODO(), &oldDeploy)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
