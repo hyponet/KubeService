@@ -7,17 +7,26 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"reflect"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-func (r *ReconcileApp) reconcileMicroService(app *appv1.App) error {
+func (r *ReconcileApp) reconcileMicroService(req reconcile.Request, app *appv1.App) error {
 	// Define the desired MicroService object
+	labels := app.Labels
+	if labels == nil {
+		labels = make(map[string]string)
+	}
+	labels["app.o0w0o.cn/app"] = app.Name
+	newMicroServices := make(map[string]*appv1.MicroService)
 	for _, microService := range app.Spec.MicroServices {
 
 		ms := &appv1.MicroService{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      app.Name + microService.Name,
 				Namespace: app.Namespace,
+				Labels:    labels,
 			},
 			Spec: microService.Spec,
 		}
@@ -26,6 +35,7 @@ func (r *ReconcileApp) reconcileMicroService(app *appv1.App) error {
 			return err
 		}
 
+		newMicroServices[ms.Name] = ms
 		// Check if the MicroService already exists
 		found := &appv1.MicroService{}
 		err := r.Get(context.TODO(), types.NamespacedName{Name: ms.Name, Namespace: ms.Namespace}, found)
@@ -42,6 +52,31 @@ func (r *ReconcileApp) reconcileMicroService(app *appv1.App) error {
 			found.Spec = ms.Spec
 			log.Info("Updating MicroService", "namespace", ms.Namespace, "name", ms.Name)
 			err = r.Update(context.TODO(), found)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return r.cleanUpMicroServices(req, app, newMicroServices)
+}
+
+func (r *ReconcileApp) cleanUpMicroServices(req reconcile.Request, app *appv1.App, msList map[string]*appv1.MicroService) error {
+	// Check if the MicroService not exists
+	ctx := context.Background()
+
+	microServiceList := appv1.MicroServiceList{}
+	labels := make(map[string]string)
+	labels["app.o0w0o.cn/app"] = app.Name
+
+	if err := r.List(ctx, client.InNamespace(req.Namespace).
+		MatchingLabels(labels), &microServiceList); err != nil {
+		log.Error(err, "unable to list old MicroServices")
+		return err
+	}
+
+	for _, oldMs := range microServiceList.Items {
+		if _, exist := msList[oldMs.Name]; exist == false {
+			err := r.Delete(context.TODO(), &oldMs)
 			if err != nil {
 				return err
 			}

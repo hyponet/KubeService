@@ -42,6 +42,59 @@ spec:
                   containers:
                     - image: nginx
                       name: nginx
-            serviceName: gateway-sample-v1
+            serviceName: gateway-sample
+          - name: v2
+            template:
+              replicas: 1
+              selector:
+                matchLabels:
+                  app: nginx
+              template:
+                metadata:
+                  labels:
+                    app: nginx
+                spec:
+                  containers:
+                    - image: nginx
+                      name: nginx
+            serviceName: gateway-sample-v2
         currentVersionName: v1
+    - name: gateway-sample2
+      spec:
+        loadBalance:
+          service:
+            name: gateway-sample2
+            spec:
+              ports:
+                - protocol: TCP
+                  port: 80
+                  targetPort: 80
+          ingress:
+            name: gateway-sample2
+            spec:
+              rules:
+                - host: foo.o0w0o.cn
+                  http:
+                    paths:
+                      - path: /bar
+                        backend:
+                          serviceName: gateway-sample2
+                          servicePort: 80
+        versions:
+          - name: v2
+            template:
+              replicas: 1
+              selector:
+                matchLabels:
+                  app: nginx
+              template:
+                metadata:
+                  labels:
+                    app: nginx
+                spec:
+                  containers:
+                    - image: nginx
+                      name: nginx
+            serviceName: gateway-sample2
+        currentVersionName: v2
 
