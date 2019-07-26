@@ -52,7 +52,7 @@ func (r *ReconcileMicroService) reconcileInstance(req reconcile.Request, microSe
 func makeVersionDeployment(version *appv1.DeployVersion, microService *appv1.MicroService) (*appsv1.Deployment, error) {
 
 	labels := microService.Labels
-	if labels==nil{
+	if labels == nil {
 		labels = make(map[string]string)
 	}
 	labels["app.o0w0o.cn/service"] = microService.Name

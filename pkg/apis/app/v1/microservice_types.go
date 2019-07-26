@@ -28,17 +28,26 @@ type Canary struct {
 	// +kubebuilder:validation:Minimum=1
 	Weight int `json:"weight"`
 
-	CanaryIngressName string `json:"canaryIngressName"`
-	Header            string `json:"header"`
-	HeaderValue       string `json:"headerValue"`
-	Cookie            string `json:"cookie"`
+	// +optional
+	CanaryIngressName string `json:"canaryIngressName,omitempty"`
+
+	// +optional
+	Header string `json:"header,omitempty"`
+
+	// +optional
+	HeaderValue string `json:"headerValue,omitempty"`
+
+	// +optional
+	Cookie string `json:"cookie,omitempty"`
 }
 
 type DeployVersion struct {
 	Name     string                `json:"name"`
 	Template appsv1.DeploymentSpec `json:"template"`
+
 	// +optional
-	ServiceName string `json:"serviceName"`
+	ServiceName string `json:"serviceName,omitempty"`
+
 	// +optional
 	Canary *Canary `json:"canary,omitempty"`
 }

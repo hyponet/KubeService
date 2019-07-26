@@ -73,10 +73,6 @@ spec:
                         type: integer
                     required:
                     - weight
-                    - canaryIngressName
-                    - header
-                    - headerValue
-                    - cookie
                     type: object
                   name:
                     type: string
@@ -87,7 +83,6 @@ spec:
                 required:
                 - name
                 - template
-                - serviceName
                 type: object
               type: array
           required:
