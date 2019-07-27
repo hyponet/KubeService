@@ -20,7 +20,9 @@ func (r *ReconcileApp) reconcileMicroService(req reconcile.Request, app *appv1.A
 	}
 	labels["app.o0w0o.cn/app"] = app.Name
 	newMicroServices := make(map[string]*appv1.MicroService)
-	for _, microService := range app.Spec.MicroServices {
+
+	for i := range app.Spec.MicroServices {
+		microService := &app.Spec.MicroServices[i]
 
 		ms := &appv1.MicroService{
 			ObjectMeta: metav1.ObjectMeta{
@@ -30,7 +32,6 @@ func (r *ReconcileApp) reconcileMicroService(req reconcile.Request, app *appv1.A
 			},
 			Spec: microService.Spec,
 		}
-
 		if err := controllerutil.SetControllerReference(app, ms, r.scheme); err != nil {
 			return err
 		}
@@ -39,25 +40,39 @@ func (r *ReconcileApp) reconcileMicroService(req reconcile.Request, app *appv1.A
 		// Check if the MicroService already exists
 		found := &appv1.MicroService{}
 		err := r.Get(context.TODO(), types.NamespacedName{Name: ms.Name, Namespace: ms.Namespace}, found)
+
 		if err != nil && errors.IsNotFound(err) {
 			log.Info("Creating MicroService", "namespace", ms.Namespace, "name", ms.Name)
 			err = r.Create(context.TODO(), ms)
 			return err
+
 		} else if err != nil {
+
 			return err
-		} else if !reflect.DeepEqual(ms.Spec, found.Spec) {
+
+		}
+
+		if !reflect.DeepEqual(ms.Spec, found.Spec) {
+
 			found.Spec = ms.Spec
-			log.Info("Updating MicroService", "namespace", ms.Namespace, "name", ms.Name)
+			log.Info("find MS changed and Updating MicroService", "namespace", ms.Namespace, "name", ms.Name)
 			err = r.Update(context.TODO(), found)
 			if err != nil {
 				return err
 			}
+
+			err := r.Get(context.TODO(), types.NamespacedName{Name: ms.Name, Namespace: ms.Namespace}, found)
+			if err != nil {
+				return err
+			}
+			microService.Spec = found.Spec
+
 		}
 	}
-	return r.cleanUpMicroServices(req, app, newMicroServices)
+	return r.cleanUpMicroServices(app, newMicroServices)
 }
 
-func (r *ReconcileApp) cleanUpMicroServices(req reconcile.Request, app *appv1.App, msList map[string]*appv1.MicroService) error {
+func (r *ReconcileApp) cleanUpMicroServices(app *appv1.App, msList map[string]*appv1.MicroService) error {
 	// Check if the MicroService not exists
 	ctx := context.Background()
 
@@ -65,15 +80,17 @@ func (r *ReconcileApp) cleanUpMicroServices(req reconcile.Request, app *appv1.Ap
 	labels := make(map[string]string)
 	labels["app.o0w0o.cn/app"] = app.Name
 
-	if err := r.List(ctx, client.InNamespace(req.Namespace).
+	if err := r.List(ctx, client.InNamespace(app.Namespace).
 		MatchingLabels(labels), &microServiceList); err != nil {
 		log.Error(err, "unable to list old MicroServices")
 		return err
 	}
 
-	for _, oldMs := range microServiceList.Items {
+	for i := range microServiceList.Items {
+		oldMs := &microServiceList.Items[i]
 		if _, exist := msList[oldMs.Name]; exist == false {
-			err := r.Delete(context.TODO(), &oldMs)
+			log.Info("Deleted orphan MS and will delete it", "namespace", app.Namespace, "App", app.Namespace, "MS", oldMs.Name)
+			err := r.Delete(context.TODO(), oldMs)
 			if err != nil {
 				return err
 			}

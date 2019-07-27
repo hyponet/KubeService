@@ -19,6 +19,8 @@ package microservice
 import (
 	appv1 "KubeService/pkg/apis/app/v1"
 	"context"
+	"k8s.io/apimachinery/pkg/types"
+	"reflect"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -104,8 +106,6 @@ type ReconcileMicroService struct {
 
 // Reconcile reads that state of the cluster for a MicroService object and makes changes based on the state read
 // and what is in the MicroService.Spec
-// TODO(user): Modify this Reconcile function to implement your Controller logic.  The scaffolding writes
-// a Deployment as an example
 // Automatically generate RBAC rules to allow the Controller to read and write Deployments
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apps,resources=deployments/status,verbs=get;update;patch
@@ -117,26 +117,35 @@ func (r *ReconcileMicroService) Reconcile(request reconcile.Request) (reconcile.
 	err := r.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			// Object not found, return.  Created objects are automatically garbage collected.
-			// For additional cleanup logic use finalizers.
 			return reconcile.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
 	}
 	if instance.DeletionTimestamp != nil {
-		log.Info("Get deleted MicroService, clean up subResources.")
+		log.Info("Get deleted MicroService, and do nothing.")
 		return reconcile.Result{}, nil
 	}
 
-	if err := r.reconcileInstance(request, instance); err != nil {
-		log.Info("Reconcile Deployment error", err)
+	if err := r.reconcileInstance(instance); err != nil {
+		log.Info("Reconcile Instance Versions error", err)
 		return reconcile.Result{}, err
 	}
 
 	if err := r.reconcileLoadBalance(instance); err != nil {
 		log.Info("Reconcile LoadBalance error", err)
 		return reconcile.Result{}, err
+	}
+
+	oldMS := &appv1.MicroService{}
+	if err := r.Get(context.TODO(), types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, oldMS); err != nil {
+		return reconcile.Result{}, err
+	}
+	if !reflect.DeepEqual(oldMS.Spec, instance.Spec) {
+		oldMS.Spec = instance.Spec
+		if err := r.Update(context.TODO(), oldMS); err != nil {
+			return reconcile.Result{}, err
+		}
 	}
 
 	return reconcile.Result{}, nil

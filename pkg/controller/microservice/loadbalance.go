@@ -19,38 +19,49 @@ func (r *ReconcileMicroService) reconcileLoadBalance(microService *appv1.MicroSe
 	staySVCName := make([]string, 5)
 	stayIngressName := make([]string, 5)
 
-	if lb == nil {
+	if lb == nil || len(microService.Spec.Versions) == 0 {
+		log.Info("microService has NONE LB config, and clear up old LB", "namespace", microService.Namespace, "name", microService.Name)
 		return r.clearUpLB(microService, &staySVCName, &stayIngressName)
 	}
 
-	if len(microService.Spec.Versions) == 0 {
-		return r.clearUpLB(microService, &staySVCName, &stayIngressName)
-	}
-
-	currentVersion := microService.Spec.Versions[0]
-	for _, version := range microService.Spec.Versions {
+	currentVersion := &microService.Spec.Versions[0]
+	defaultVersion := true
+	for i := range microService.Spec.Versions {
+		version := &microService.Spec.Versions[i]
 		if version.Name == microService.Spec.CurrentVersionName {
+			log.Info("Get current Version", "name", version.Name)
 			currentVersion = version
+			defaultVersion = false
 			break
 		}
 	}
 
+	if defaultVersion {
+		log.Info("microService do not set currentVersion, and choose first for current", "namespace", microService.Namespace, "microService", microService.Name, "defaultCurrentVersion", currentVersion.Name)
+	}
+
 	enableSVC := false
 	if lb.Service != nil {
+
 		svcLB := lb.Service
-		// If use define custom Service
 		enableSVC = true
+		log.Info("microService enable SVC LB, and every version has independent SVC", "namespace", microService.Namespace, "microService", microService.Name)
+
 		svcLB.Spec.Selector = currentVersion.Template.Selector.MatchLabels
 		svc, err := makeService(svcLB.Name, microService.Namespace, microService.Labels, &svcLB.Spec)
 		if err != nil {
 			return err
 		}
-		svc.Labels = microService.Labels
+
+		for k, v := range microService.Labels {
+			svc.Labels[k] = v
+		}
 		if err := controllerutil.SetControllerReference(microService, svc, r.scheme); err != nil {
 			return err
 		}
 
 		if err := r.updateOrCreateSVC(svc); err != nil {
+			log.Error(err, "Set SVC LB error", "namespace", microService.Namespace, "microService", microService.Name)
 			return err
 		}
 		staySVCName = append(staySVCName, svc.Name)
@@ -72,19 +83,22 @@ func (r *ReconcileMicroService) reconcileLoadBalance(microService *appv1.MicroSe
 			return err
 		}
 		if err := r.updateOrCreateIngress(ingress); err != nil {
+			log.Error(err, "Set Ingress LB error", "namespace", microService.Namespace, "microService", microService.Name)
 			return err
 		}
 		stayIngressName = append(stayIngressName, ingress.Name)
 	}
 
 	if enableSVC {
-		for i, version := range microService.Spec.Versions {
+		for i := range microService.Spec.Versions {
+			version := &microService.Spec.Versions[i]
 			spec := lb.Service.Spec.DeepCopy()
 			spec.Selector = version.Template.Selector.MatchLabels
 			serviceName := version.ServiceName
 			if serviceName == "" {
 				serviceName = microService.Name + "-" + version.Name
 			}
+			log.Info("Set DeployVersion SVC", "namespace", microService.Namespace, "microService", microService.Name, "Version", version.Name, "SVC", serviceName)
 			svc, err := makeService(serviceName, microService.Namespace, microService.Labels, spec)
 			if err != nil {
 				return err
@@ -94,9 +108,10 @@ func (r *ReconcileMicroService) reconcileLoadBalance(microService *appv1.MicroSe
 			}
 
 			if err := r.updateOrCreateSVC(svc); err != nil {
+				log.Error(err, "Set DeployVersion SVC Error", "namespace", microService.Namespace, "microService", microService.Name, "Version", version.Name)
 				return err
 			}
-			microService.Spec.Versions[i].ServiceName = serviceName
+			version.ServiceName = serviceName
 			staySVCName = append(staySVCName, serviceName)
 		}
 	}
@@ -106,6 +121,7 @@ func (r *ReconcileMicroService) reconcileLoadBalance(microService *appv1.MicroSe
 			if version.Canary == nil {
 				continue
 			}
+			log.Info("Set Canary Ingress", "namespace", microService.Namespace, "microService", microService.Name, "Version", version.Name)
 			ingress, err := makeCanaryIngress(microService, &lb.Ingress.Spec, &version)
 			if err != nil {
 				return err
@@ -114,14 +130,11 @@ func (r *ReconcileMicroService) reconcileLoadBalance(microService *appv1.MicroSe
 				return err
 			}
 			if err := r.updateOrCreateIngress(ingress); err != nil {
+				log.Error(err, "Set Canary Ingress error", "namespace", microService.Namespace, "microService", microService.Name, "Version", version.Name)
 				return err
 			}
 			stayIngressName = append(stayIngressName, ingress.Name)
 		}
-	}
-
-	if err := r.Update(context.TODO(), microService); err != nil {
-		return err
 	}
 
 	return r.clearUpLB(microService, &staySVCName, &stayIngressName)
@@ -133,8 +146,9 @@ func (r *ReconcileMicroService) updateOrCreateSVC(svc *v1.Service) error {
 	err := r.Get(context.TODO(), types.NamespacedName{Name: svc.Name, Namespace: svc.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
 		log.Info("Creating Service", "namespace", svc.Namespace, "name", svc.Name)
-		err = r.Create(context.TODO(), svc)
-		return err
+		if err := r.Create(context.TODO(), svc); err != nil{
+			return err
+		}
 	} else if err != nil {
 		return err
 	} else if !reflect.DeepEqual(svc.Spec, found.Spec) {

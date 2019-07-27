@@ -19,6 +19,8 @@ package app
 import (
 	appv1 "KubeService/pkg/apis/app/v1"
 	"context"
+	"k8s.io/apimachinery/pkg/types"
+	"reflect"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -85,8 +87,6 @@ type ReconcileApp struct {
 
 // Reconcile reads that state of the cluster for a App object and makes changes based on the state read
 // and what is in the App.Spec
-// TODO(user): Modify this Reconcile function to implement your Controller logic.  The scaffolding writes
-// a Deployment as an example
 // Automatically generate RBAC rules to allow the Controller to read and write Deployments
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apps,resources=deployments/status,verbs=get;update;patch
@@ -113,6 +113,17 @@ func (r *ReconcileApp) Reconcile(request reconcile.Request) (reconcile.Result, e
 	if err := r.reconcileMicroService(request, instance); err != nil {
 		log.Info("Creating MicroService error", err)
 		return reconcile.Result{}, err
+	}
+
+	oldApp := &appv1.App{}
+	if err := r.Get(context.TODO(), types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, oldApp); err != nil {
+		return reconcile.Result{}, err
+	}
+	if !reflect.DeepEqual(oldApp.Spec, instance.Spec) {
+		oldApp.Spec = instance.Spec
+		if err := r.Update(context.TODO(), oldApp); err != nil {
+			return reconcile.Result{}, err
+		}
 	}
 	return reconcile.Result{}, nil
 }
