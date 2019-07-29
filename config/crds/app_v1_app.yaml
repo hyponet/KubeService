@@ -11,6 +11,8 @@ spec:
     kind: App
     plural: apps
   scope: Namespaced
+  subresources:
+    status: {}
   validation:
     openAPIV3Schema:
       properties:
@@ -102,6 +104,46 @@ spec:
               type: array
           type: object
         status:
+          properties:
+            availableVersions:
+              format: int32
+              type: integer
+            conditions:
+              description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
+                of cluster Important: Run "make" to regenerate code after modifying
+                this file'
+              items:
+                properties:
+                  lastTransitionTime:
+                    description: Last time the condition transitioned from one status
+                      to another.
+                    format: date-time
+                    type: string
+                  lastUpdateTime:
+                    description: The last time this condition was updated.
+                    format: date-time
+                    type: string
+                  message:
+                    description: A human readable message indicating details about
+                      the transition.
+                    type: string
+                  reason:
+                    description: The reason for the condition's last transition.
+                    type: string
+                  status:
+                    description: Status of the condition, one of True, False, Unknown.
+                    type: string
+                  type:
+                    description: Type of deployment condition.
+                    type: string
+                required:
+                - type
+                - status
+                type: object
+              type: array
+            totalVersions:
+              format: int32
+              type: integer
           type: object
   version: v1
 status:

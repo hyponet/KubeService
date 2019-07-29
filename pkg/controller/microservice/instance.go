@@ -35,8 +35,9 @@ func (r *ReconcileMicroService) reconcileInstance(microService *appv1.MicroServi
 		if err != nil && errors.IsNotFound(err) {
 
 			log.Info("Old Deployment NotFound and Creating new one", "namespace", deploy.Namespace, "name", deploy.Name)
-			err = r.Create(context.TODO(), deploy)
-			return err
+			if err = r.Create(context.TODO(), deploy); err != nil {
+				return err
+			}
 
 		} else if err != nil {
 
@@ -106,4 +107,69 @@ func (r *ReconcileMicroService) cleanUpDeploy(microService *appv1.MicroService, 
 		}
 	}
 	return nil
+}
+
+func (r *ReconcileMicroService) syncMicroServiceStatus(microService *appv1.MicroService) error {
+	if microService.Status.AvailableVersions != 0 && microService.Status.TotalVersions == microService.Status.AvailableVersions {
+		return nil
+	}
+
+	ctx := context.Background()
+	newStatus, err := r.calculateStatus(microService)
+	if err != nil {
+		return err
+	}
+
+	condType := appv1.MicroServiceProgressing
+	status := appv1.ConditionTrue
+	reason := ""
+	message := ""
+	if newStatus.AvailableVersions == newStatus.TotalVersions {
+		condType = appv1.MicroServiceAvailable
+		reason = "All deploy have updated."
+	} else if newStatus.AvailableVersions > newStatus.TotalVersions {
+		reason = "Some deploys got to be deleted."
+	} else {
+		reason = "Some deploys got to be created."
+	}
+	condition := appv1.MicroServiceCondition{
+		Type:               condType,
+		Status:             status,
+		LastUpdateTime:     metav1.Now(),
+		LastTransitionTime: metav1.Now(),
+		Reason:             reason,
+		Message:            message,
+	}
+	conditions := microService.Status.Conditions
+	for i := range conditions {
+		newStatus.Conditions = append(newStatus.Conditions, conditions[i])
+	}
+	newStatus.Conditions = append(newStatus.Conditions, condition)
+	microService.Status = newStatus
+	err = r.Status().Update(ctx, microService)
+	return err
+}
+
+func (r *ReconcileMicroService) calculateStatus(microService *appv1.MicroService) (appv1.MicroServiceStatus, error) {
+	// Check if the MicroService not exists
+	ctx := context.Background()
+
+	deployList := appsv1.DeploymentList{}
+	labels := make(map[string]string)
+	labels["app.o0w0o.cn/service"] = microService.Name
+
+	al := int32(len(deployList.Items))
+	tl := int32(len(microService.Spec.Versions))
+	newStatus := appv1.MicroServiceStatus{
+		AvailableVersions: al,
+		TotalVersions:     tl,
+	}
+	if err := r.List(ctx, client.InNamespace(microService.Namespace).
+		MatchingLabels(labels), &deployList); err != nil {
+		log.Error(err, "unable to list old MicroServices")
+		return newStatus, err
+	}
+	newStatus.AvailableVersions = int32(len(deployList.Items))
+
+	return newStatus, nil
 }

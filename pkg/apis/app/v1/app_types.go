@@ -36,6 +36,31 @@ type AppSpec struct {
 type AppStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	Conditions             []AppCondition `json:"conditions,omitempty"`
+	AvailableMicroServices int32          `json:"availableVersions,omitempty" protobuf:"varint,4,opt,name=availableMSs"`
+	TotalMicroServices     int32          `json:"totalVersions,omitempty" protobuf:"varint,4,opt,name=totalMSs"`
+}
+
+type AppConditionType string
+
+const (
+	AppAvailable   AppConditionType = "Available"
+	AppProgressing AppConditionType = "Progressing"
+)
+
+type AppCondition struct {
+	// Type of deployment condition.
+	Type AppConditionType `json:"type" protobuf:"bytes,1,opt,name=type,casttype=AppConditionType"`
+	// Status of the condition, one of True, False, Unknown.
+	Status ConditionStatus `json:"status" protobuf:"bytes,2,opt,name=status,casttype=k8s.io/api/core/v1.ConditionStatus"`
+	// The last time this condition was updated.
+	LastUpdateTime metav1.Time `json:"lastUpdateTime,omitempty" protobuf:"bytes,6,opt,name=lastUpdateTime"`
+	// Last time the condition transitioned from one status to another.
+	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty" protobuf:"bytes,7,opt,name=lastTransitionTime"`
+	// The reason for the condition's last transition.
+	Reason string `json:"reason,omitempty" protobuf:"bytes,4,opt,name=reason"`
+	// A human readable message indicating details about the transition.
+	Message string `json:"message,omitempty" protobuf:"bytes,5,opt,name=message"`
 }
 
 // +genclient
@@ -43,6 +68,7 @@ type AppStatus struct {
 
 // App is the Schema for the apps API
 // +k8s:openapi-gen=true
+// +kubebuilder:subresource:status
 type App struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
