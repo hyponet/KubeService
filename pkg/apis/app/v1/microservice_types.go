@@ -81,6 +81,39 @@ type MicroServiceSpec struct {
 type MicroServiceStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	Conditions        []MicroServiceCondition `json:"conditions,omitempty"`
+	AvailableVersions int32                   `json:"availableVersions,omitempty" protobuf:"varint,4,opt,name=availableVersions"`
+	TotalVersions     int32                   `json:"totalVersions,omitempty" protobuf:"varint,4,opt,name=totalVersions"`
+}
+
+type MicroServiceConditionType string
+
+const (
+	MicroServiceAvailable MicroServiceConditionType = "Available"
+	MicroServiceProgressing MicroServiceConditionType = "Progressing"
+)
+
+type ConditionStatus string
+
+const (
+	ConditionTrue    ConditionStatus = "True"
+	ConditionFalse   ConditionStatus = "False"
+	ConditionUnknown ConditionStatus = "Unknown"
+)
+
+type MicroServiceCondition struct {
+	// Type of deployment condition.
+	Type MicroServiceConditionType `json:"type" protobuf:"bytes,1,opt,name=type,casttype=MicroServiceConditionType"`
+	// Status of the condition, one of True, False, Unknown.
+	Status ConditionStatus `json:"status" protobuf:"bytes,2,opt,name=status,casttype=k8s.io/api/core/v1.ConditionStatus"`
+	// The last time this condition was updated.
+	LastUpdateTime metav1.Time `json:"lastUpdateTime,omitempty" protobuf:"bytes,6,opt,name=lastUpdateTime"`
+	// Last time the condition transitioned from one status to another.
+	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty" protobuf:"bytes,7,opt,name=lastTransitionTime"`
+	// The reason for the condition's last transition.
+	Reason string `json:"reason,omitempty" protobuf:"bytes,4,opt,name=reason"`
+	// A human readable message indicating details about the transition.
+	Message string `json:"message,omitempty" protobuf:"bytes,5,opt,name=message"`
 }
 
 // +genclient
@@ -88,6 +121,7 @@ type MicroServiceStatus struct {
 
 // MicroService is the Schema for the microservices API
 // +k8s:openapi-gen=true
+// +kubebuilder:subresource:status
 type MicroService struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
