@@ -43,13 +43,11 @@ func (r *ReconcileApp) reconcileMicroService(req reconcile.Request, app *appv1.A
 
 		if err != nil && errors.IsNotFound(err) {
 			log.Info("Creating MicroService", "namespace", ms.Namespace, "name", ms.Name)
-			err = r.Create(context.TODO(), ms)
-			return err
-
+			if err = r.Create(context.TODO(), ms); err != nil {
+				return err
+			}
 		} else if err != nil {
-
 			return err
-
 		}
 
 		if !reflect.DeepEqual(ms.Spec, found.Spec) {
