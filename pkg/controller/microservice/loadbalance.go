@@ -146,7 +146,7 @@ func (r *ReconcileMicroService) updateOrCreateSVC(svc *v1.Service) error {
 	err := r.Get(context.TODO(), types.NamespacedName{Name: svc.Name, Namespace: svc.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
 		log.Info("Creating Service", "namespace", svc.Namespace, "name", svc.Name)
-		if err := r.Create(context.TODO(), svc); err != nil{
+		if err := r.Create(context.TODO(), svc); err != nil {
 			return err
 		}
 	} else if err != nil {

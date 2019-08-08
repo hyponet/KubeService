@@ -110,12 +110,17 @@ func (r *ReconcileApp) Reconcile(request reconcile.Request) (reconcile.Result, e
 		return reconcile.Result{}, nil
 	}
 
-	if err := r.syncAppStatus(instance); err != nil {
-		log.Info("Sync App error", err)
+	//if err := r.syncAppStatus(instance); err != nil {
+	//	log.Info("Sync App error", err)
+	//	return reconcile.Result{}, err
+	//}
+
+	if err := r.reconcileAppForMutilCluster(instance); err != nil {
+		log.Info("Inform to ClusterManager error", err)
 		return reconcile.Result{}, err
 	}
 
-	if err := r.reconcileMicroService(request, instance); err != nil {
+	if err := r.reconcileMicroService(instance); err != nil {
 		log.Info("Creating MicroService error", err)
 		return reconcile.Result{}, err
 	}

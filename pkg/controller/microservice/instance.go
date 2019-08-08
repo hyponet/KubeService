@@ -7,6 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"os"
 	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -35,6 +36,12 @@ func (r *ReconcileMicroService) reconcileInstance(microService *appv1.MicroServi
 		if err != nil && errors.IsNotFound(err) {
 
 			log.Info("Old Deployment NotFound and Creating new one", "namespace", deploy.Namespace, "name", deploy.Name)
+
+			// 若不属于当前集群，则不创建
+			clusterName := os.Getenv("cluster_name")
+			if microService.Spec.ClusterName != clusterName {
+				continue
+			}
 			if err = r.Create(context.TODO(), deploy); err != nil {
 				return err
 			}
@@ -105,11 +112,26 @@ func (r *ReconcileMicroService) cleanUpDeploy(microService *appv1.MicroService, 
 				return err
 			}
 		}
+		// 若不属于当前集群，则删除
+		clusterName := os.Getenv("cluster_name")
+		if microService.Spec.ClusterName != clusterName {
+			err := r.Delete(context.TODO(), &oldDeploy)
+			if err != nil {
+				log.Error(err, "Delete orphan Deployment error", "namespace", oldDeploy.Namespace, "name", oldDeploy.Name)
+				return err
+			}
+		}
+
 	}
 	return nil
 }
 
 func (r *ReconcileMicroService) syncMicroServiceStatus(microService *appv1.MicroService) error {
+	// microService 状态同步到位
+	clusterName := os.Getenv("cluster_name")
+	if microService.Spec.ClusterName != clusterName {
+		return nil
+	}
 	if microService.Status.AvailableVersions != 0 && microService.Status.TotalVersions == microService.Status.AvailableVersions {
 		return nil
 	}

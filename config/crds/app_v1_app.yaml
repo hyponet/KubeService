@@ -37,6 +37,8 @@ spec:
                     type: string
                   spec:
                     properties:
+                      clusterName:
+                        type: string
                       currentVersionName:
                         type: string
                       loadBalance:

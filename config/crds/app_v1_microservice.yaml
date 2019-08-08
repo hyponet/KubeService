@@ -30,6 +30,8 @@ spec:
           type: object
         spec:
           properties:
+            clusterName:
+              type: string
             currentVersionName:
               type: string
             loadBalance:
