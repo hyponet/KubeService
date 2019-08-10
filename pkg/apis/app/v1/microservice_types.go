@@ -72,6 +72,8 @@ type LoadBalance struct {
 // MicroServiceSpec defines the desired state of MicroService
 type MicroServiceSpec struct {
 	// +optional
+	ClusterName string `json:"clusterName,omitempty"`
+	// +optional
 	LoadBalance        *LoadBalance    `json:"loadBalance,omitempty"`
 	Versions           []DeployVersion `json:"versions"`
 	CurrentVersionName string          `json:"currentVersionName"`
@@ -89,7 +91,7 @@ type MicroServiceStatus struct {
 type MicroServiceConditionType string
 
 const (
-	MicroServiceAvailable MicroServiceConditionType = "Available"
+	MicroServiceAvailable   MicroServiceConditionType = "Available"
 	MicroServiceProgressing MicroServiceConditionType = "Progressing"
 )
 

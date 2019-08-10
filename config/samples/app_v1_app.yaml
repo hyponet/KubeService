@@ -6,6 +6,7 @@ spec:
   microServices:
     - name: voting-web
       spec:
+        clusterName: bbb
         loadBalance:
           service:
             name: voting-web
@@ -59,6 +60,7 @@ spec:
         currentVersionName: v1
     - name: voting-result
       spec:
+        clusterName: aaa
         loadBalance:
           service:
             name: voting-result

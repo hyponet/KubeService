@@ -32,13 +32,22 @@ type AppSpec struct {
 	MicroServices []MicroServiceTemplate `json:"microServices,omitempty"`
 }
 
+type FromManagerType string
+
+const (
+	ManagerCreated FromManagerType = "Created"
+	ManagerUpdated FromManagerType = "Updated"
+	ManagerNone    FromManagerType = "Nil"
+)
+
 // AppStatus defines the observed state of App
 type AppStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Conditions             []AppCondition `json:"conditions,omitempty"`
-	AvailableMicroServices int32          `json:"availableVersions,omitempty" protobuf:"varint,4,opt,name=availableMSs"`
-	TotalMicroServices     int32          `json:"totalVersions,omitempty" protobuf:"varint,4,opt,name=totalMSs"`
+	Conditions             []AppCondition  `json:"conditions,omitempty"`
+	AvailableMicroServices int32           `json:"availableVersions,omitempty" protobuf:"varint,4,opt,name=availableMSs"`
+	TotalMicroServices     int32           `json:"totalVersions,omitempty" protobuf:"varint,4,opt,name=totalMSs"`
+	FromManager            FromManagerType `json:"fromManager,omitempty" protobuf:"bytes,1,opt,name=type,casttype=FromManagerType"`
 }
 
 type AppConditionType string

@@ -7,6 +7,11 @@ spec:
   template:
     spec:
       containers:
-      # Change the value of image field below to your controller image URL
-      - image: IMAGE_URL
-        name: manager
+        # Change the value of image field below to your controller image URL
+        - image: daocloud.io/dc_pokeman/controller
+          name: manager
+          env:
+            - name: cluster_name
+              value: desktop
+            - name: manager_url
+              value: http://192.168.31.84:5000

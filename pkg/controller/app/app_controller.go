@@ -89,6 +89,8 @@ type ReconcileApp struct {
 // and what is in the App.Spec
 // Automatically generate RBAC rules to allow the Controller to read and write Deployments
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=apps,resources=ingresses,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=extensions,resources=ingresses,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apps,resources=deployments/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=app.o0w0o.cn,resources=apps,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=app.o0w0o.cn,resources=apps/status,verbs=get;update;patch
@@ -115,7 +117,12 @@ func (r *ReconcileApp) Reconcile(request reconcile.Request) (reconcile.Result, e
 		return reconcile.Result{}, err
 	}
 
-	if err := r.reconcileMicroService(request, instance); err != nil {
+	if err := r.reconcileAppForMutilCluster(instance); err != nil {
+		log.Info("Inform to ClusterManager error", err)
+		return reconcile.Result{}, err
+	}
+
+	if err := r.reconcileMicroService(instance); err != nil {
 		log.Info("Creating MicroService error", err)
 		return reconcile.Result{}, err
 	}
