@@ -104,12 +104,14 @@ func (r *ReconcileApp) cleanUpMicroServices(app *appv1.App, msList map[string]*a
 }
 
 func (r *ReconcileApp) syncAppStatus(app *appv1.App) error {
+	ctx := context.Background()
 	// app 状态同步到位
 	if app.Status.AvailableMicroServices != 0 && app.Status.AvailableMicroServices == app.Status.TotalMicroServices {
-		return nil
+		app.Status.FromManager = appv1.ManagerNone
+		err := r.Status().Update(ctx, app)
+		return err
 	}
 
-	ctx := context.Background()
 	newStatus, err := r.calculateStatus(app)
 	if err != nil {
 		return err
@@ -170,6 +172,10 @@ func (r *ReconcileApp) calculateStatus(app *appv1.App) (appv1.AppStatus, error) 
 }
 
 func (r *ReconcileApp) reconcileAppForMutilCluster(app *appv1.App) error {
+	status := app.Status
+	if status.FromManager == appv1.ManagerCreated || status.FromManager == appv1.ManagerUpdated{
+		return nil
+	}
 	var netTransport = &http.Transport{
 		MaxIdleConns:       10,
 		IdleConnTimeout:    30 * time.Second,
@@ -182,7 +188,6 @@ func (r *ReconcileApp) reconcileAppForMutilCluster(app *appv1.App) error {
 
 	clusterName := os.Getenv("cluster_name")
 	m := os.Getenv("manager_url")
-	//managerUrl := path.Join(m, "/apps")
 	managerUrl := m + "/apps"
 	yml, err := json.Marshal(app)
 	if err != nil {

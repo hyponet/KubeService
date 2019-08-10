@@ -1,0 +1,6 @@
+resources:
+- rbac_role.yaml
+- rbac_role_binding.yaml
+- auth_proxy_service.yaml
+- auth_proxy_role.yaml
+- auth_proxy_role_binding.yaml

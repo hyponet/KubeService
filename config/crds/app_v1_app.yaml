@@ -143,6 +143,8 @@ spec:
                 - status
                 type: object
               type: array
+            fromManager:
+              type: string
             totalVersions:
               format: int32
               type: integer

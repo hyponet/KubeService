@@ -127,10 +127,10 @@ func (r *ReconcileMicroService) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, nil
 	}
 
-	//if err := r.syncMicroServiceStatus(instance); err != nil {
-	//	log.Info("Sync MicroServiceStatus error", err)
-	//	return reconcile.Result{}, err
-	//}
+	if err := r.syncMicroServiceStatus(instance); err != nil {
+		log.Info("Sync MicroServiceStatus error", err)
+		return reconcile.Result{}, err
+	}
 
 	if err := r.reconcileInstance(instance); err != nil {
 		log.Info("Reconcile Instance Versions error", err)
